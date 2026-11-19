@@ -2,6 +2,17 @@
 
 {% block title %}Checkout · Makewell{% endblock %}
 
+{# "checkout-error" is this page shown again after a failed payment. It has a
+   different name so that 'Checkout Started' is not counted twice. #}
+{% block body_data %}
+      data-page="{{ 'checkout-error' if error else 'checkout' }}"
+      data-workshop-id="{{ order.workshop_session.workshop_id }}"
+      data-workshop-session-id="{{ order.workshop_session.id }}"
+      data-seats="{{ order.seats }}"
+      data-order-value="{{ order.amount_pence / 100 }}"
+      data-currency="GBP"
+{% endblock %}
+
 {% block content %}
 <section class="checkout">
   <div class="form-card">

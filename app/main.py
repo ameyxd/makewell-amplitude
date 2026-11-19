@@ -3,6 +3,7 @@ import os
 from datetime import datetime
 from pathlib import Path
 
+from dotenv import load_dotenv
 from fastapi import FastAPI, Form, Request
 from fastapi.responses import RedirectResponse
 from fastapi.staticfiles import StaticFiles
@@ -12,6 +13,13 @@ from starlette.middleware.sessions import SessionMiddleware
 from app import auth, db, payments, seed
 
 APP_DIR = Path(__file__).parent
+
+# Read settings from the .env file, if there is one, into os.environ.
+load_dotenv()
+
+# The Amplitude project to send to. Empty means tracking is switched off.
+# This key identifies the project; it is meant to be visible in the browser.
+AMPLITUDE_API_KEY = os.environ.get("AMPLITUDE_API_KEY", "")
 
 MAX_SEATS = 4  # the most seats one booking can take
 
@@ -59,9 +67,15 @@ def duration(minutes):
     return f"{hours} hrs {rest} min" if rest else f"{hours} hrs"
 
 
+def days_until(text):
+    """Whole days from now until a date, e.g. 9. Used as an event property."""
+    return (datetime.fromisoformat(text) - datetime.now()).days
+
+
 templates.env.filters["pounds"] = pounds
 templates.env.filters["nice_date"] = nice_date
 templates.env.filters["duration"] = duration
+templates.env.filters["days_until"] = days_until
 
 
 # --- Helpers every page uses ---
@@ -75,10 +89,11 @@ def current_user(request):
 
 
 def render(request, template, context=None, status_code=200):
-    """Build a page. Adds `user` so the header can show who is logged in."""
+    """Build a page. Adds the values every page needs, such as `user`."""
     context = context or {}
     context["user"] = current_user(request)
     context["has_pending_booking"] = "pending" in request.session
+    context["amplitude_key"] = AMPLITUDE_API_KEY
     return templates.TemplateResponse(
         request, template, context, status_code=status_code
     )

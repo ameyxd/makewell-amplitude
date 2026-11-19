@@ -2,6 +2,17 @@
 
 {% block title %}{{ workshop.name }} · Makewell{% endblock %}
 
+{# "workshop-error" is this page shown again after a failed choice. It has a
+   different name so that 'Workshop Viewed' is not counted twice. #}
+{% block body_data %}
+      data-page="{{ 'workshop-error' if error else 'workshop' }}"
+      data-workshop-id="{{ workshop.id }}"
+      data-workshop-name="{{ workshop.name }}"
+      data-category="{{ workshop.category }}"
+      data-price="{{ workshop.price_pence / 100 }}"
+      data-sessions-available="{{ sessions|selectattr('seats_left', 'gt', 0)|list|length }}"
+{% endblock %}
+
 {% block content %}
 <a class="back" href="/">&larr; All workshops</a>
 
@@ -37,12 +48,14 @@
     <p class="form-error" role="alert">{{ error }}</p>
     {% endif %}
 
-    <form method="post" action="/bookings/start">
+    <form method="post" action="/bookings/start" id="booking-form">
       <ul class="session-list">
         {% for session in sessions %}
         <li>
           <label class="session{% if session.seats_left == 0 %} is-full{% endif %}">
             <input type="radio" name="workshop_session_id" value="{{ session.id }}"
+                   data-seats-left="{{ session.seats_left }}"
+                   data-days-until="{{ session.starts_at|days_until }}"
                    required {% if session.seats_left == 0 %}disabled{% endif %}>
             <span class="session-date">{{ session.starts_at|nice_date }}</span>
             {% if session.seats_left == 0 %}

@@ -9,7 +9,11 @@
   <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/static/css/site.css">
 </head>
-<body>
+{# The data-... attributes below are read by static/js/analytics.js.
+   Each page adds its own through the body_data block. #}
+<body data-user-id="{{ user.id if user else '' }}"
+      data-amplitude-key="{{ amplitude_key }}"
+      {% block body_data %}data-page="other"{% endblock %}>
   <header class="site-header">
     <div class="wrap header-row">
       <a class="wordmark" href="/">Makewell<span class="wordmark-dot">.</span></a>
@@ -18,7 +22,7 @@
         {% if user %}
         <a href="/my-bookings">My bookings</a>
         <span class="nav-user">Hi, {{ user.display_name }}</span>
-        <form method="post" action="/logout">
+        <form method="post" action="/logout" id="logout-form">
           <button class="link-button" type="submit">Log out</button>
         </form>
         {% else %}
@@ -36,5 +40,12 @@
   <footer class="site-footer">
     <div class="wrap">Makewell is a demo. Every workshop, person and payment here is fake.</div>
   </footer>
+
+  {# Tracking. Amplitude's script must come first: it creates `amplitude`,
+     which our file then uses. With no API key, nothing is loaded. #}
+  {% if amplitude_key %}
+  <script src="https://cdn.amplitude.com/libs/analytics-browser-2.49.3-min.js.gz"></script>
+  <script src="/static/js/analytics.js"></script>
+  {% endif %}
 </body>
 </html>

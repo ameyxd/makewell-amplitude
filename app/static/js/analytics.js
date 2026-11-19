@@ -1,0 +1,104 @@
+// Makewell browser tracking.
+//
+// All Amplitude code that runs in the browser is in this file. It runs on
+// every page, after Amplitude's own script has loaded and created the
+// global `amplitude` object.
+//
+// The page tells this file what it needs through data-... attributes on
+// the <body> tag, written by the Python templates. For example
+// <body data-page="workshop" data-price="42"> is read here as
+// body.dataset.page and body.dataset.price.
+
+const body = document.body;
+const page = body.dataset.page;                    // which page this is
+const userId = body.dataset.userId || undefined;   // empty for guests
+
+
+// 1. Start Amplitude.
+//    Guests get a random device ID. Logged-in users also get their user ID,
+//    which is how Amplitude joins a guest's earlier activity to the account.
+
+amplitude.init(body.dataset.amplitudeKey, userId, {
+  autocapture: {
+    attribution: true,          // where the visitor came from
+    pageViews: true,
+    sessions: true,
+    formInteractions: false,    // off: we name the steps that matter ourselves
+    fileDownloads: false,
+    elementInteractions: false,
+  },
+});
+
+
+// 2. Send anything still waiting when the visitor leaves the page.
+//    Events are normally sent in batches about once a second. "beacon" is a
+//    way of sending that the browser completes even while the page closes.
+
+window.addEventListener('pagehide', () => {
+  amplitude.setTransport('beacon');
+  amplitude.flush();
+});
+
+
+// 3. Events that fire when a page loads.
+
+if (page === 'workshop') {
+  amplitude.track('Workshop Viewed', {
+    workshop_id: Number(body.dataset.workshopId),
+    workshop_name: body.dataset.workshopName,
+    category: body.dataset.category,
+    price: Number(body.dataset.price),
+    sessions_available: Number(body.dataset.sessionsAvailable),
+  });
+}
+
+if (page === 'checkout') {
+  amplitude.track('Checkout Started', {
+    workshop_id: Number(body.dataset.workshopId),
+    workshop_session_id: Number(body.dataset.workshopSessionId),
+    seats: Number(body.dataset.seats),
+    order_value: Number(body.dataset.orderValue),
+    currency: body.dataset.currency,
+  });
+}
+
+
+// 4. Events that fire when a form is submitted.
+
+const bookingForm = document.querySelector('#booking-form');
+if (bookingForm) {
+  bookingForm.addEventListener('submit', () => {
+    const chosen = bookingForm.querySelector('input[name="workshop_session_id"]:checked');
+    amplitude.track('Session Selected', {
+      workshop_id: Number(body.dataset.workshopId),
+      workshop_session_id: Number(chosen.value),
+      seats: Number(bookingForm.querySelector('#seats').value),
+      seats_left: Number(chosen.dataset.seatsLeft),
+      days_until_session: Number(chosen.dataset.daysUntil),
+    });
+  });
+}
+
+const checkoutForm = document.querySelector('#checkout-form');
+if (checkoutForm) {
+  checkoutForm.addEventListener('submit', () => {
+    // Only what was chosen and what it costs. Never the card fields.
+    amplitude.track('Payment Submitted', {
+      workshop_session_id: Number(body.dataset.workshopSessionId),
+      order_value: Number(body.dataset.orderValue),
+      currency: body.dataset.currency,
+    });
+  });
+}
+
+
+// 5. Logging out.
+//    reset() forgets the user ID and makes a new device ID, so the next
+//    person to use this browser is not mistaken for the last one.
+
+const logoutForm = document.querySelector('#logout-form');
+if (logoutForm) {
+  logoutForm.addEventListener('submit', () => {
+    amplitude.reset();
+  });
+}
