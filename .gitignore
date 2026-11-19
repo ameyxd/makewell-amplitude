@@ -6,6 +6,7 @@
 .venv/
 __pycache__/
 *.pyc
+.pytest_cache/
 
 # Local database and test output
 *.db

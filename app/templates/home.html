@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section class="hero">
+  <p class="eyebrow">Small-group craft workshops</p>
+  <h1>Spend a few hours making something with your hands.</h1>
+  <p class="lede">Small groups, every tool provided, and you take home what you make.</p>
+</section>
+
+<section class="card-grid">
+  {% for workshop in workshops %}
+  <a class="card" href="/workshops/{{ workshop.slug }}">
+    <div class="panel tone-{{ workshop.tone }}">
+      <span class="tag">{{ workshop.category }}</span>
+    </div>
+    <div class="card-body">
+      <h2>{{ workshop.name }}</h2>
+      <p>{{ workshop.blurb }}</p>
+      <div class="card-meta">
+        <span>{{ workshop.duration_minutes|duration }}</span>
+        <span class="price">{{ workshop.price_pence|pounds }}</span>
+      </div>
+      <div class="card-foot">
+        {% if workshop.seats_left > 0 %}
+        Next: {{ workshop.next_starts_at|nice_date }}
+        {% else %}
+        No seats left on upcoming dates
+        {% endif %}
+      </div>
+    </div>
+  </a>
+  {% endfor %}
+</section>
+{% endblock %}

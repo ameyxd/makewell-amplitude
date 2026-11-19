@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+
+{% block title %}{{ workshop.name }} · Makewell{% endblock %}
+
+{% block content %}
+<a class="back" href="/">&larr; All workshops</a>
+
+<article class="detail">
+  <div class="detail-main">
+    <div class="panel panel-large tone-{{ workshop.tone }}">
+      <span class="tag">{{ workshop.category }}</span>
+    </div>
+    <h1>{{ workshop.name }}</h1>
+    <p class="lede">{{ workshop.blurb }}</p>
+    <p>{{ workshop.description }}</p>
+
+    <dl class="facts">
+      <div>
+        <dt>Length</dt>
+        <dd>{{ workshop.duration_minutes|duration }}</dd>
+      </div>
+      <div>
+        <dt>Price</dt>
+        <dd>{{ workshop.price_pence|pounds }} per seat</dd>
+      </div>
+      <div>
+        <dt>Includes</dt>
+        <dd>All tools and materials</dd>
+      </div>
+    </dl>
+  </div>
+
+  <aside class="detail-side">
+    <h2>Upcoming dates</h2>
+    <ul class="session-list">
+      {% for session in sessions %}
+      <li class="session{% if session.seats_left == 0 %} is-full{% endif %}">
+        <span class="session-date">{{ session.starts_at|nice_date }}</span>
+        {% if session.seats_left == 0 %}
+        <span class="badge badge-out">Sold out</span>
+        {% elif session.seats_left <= 3 %}
+        <span class="badge badge-low">{{ session.seats_left }} left</span>
+        {% else %}
+        <span class="badge badge-ok">{{ session.seats_left }} seats left</span>
+        {% endif %}
+      </li>
+      {% else %}
+      <li class="session">No upcoming dates yet.</li>
+      {% endfor %}
+    </ul>
+  </aside>
+</article>
+{% endblock %}
