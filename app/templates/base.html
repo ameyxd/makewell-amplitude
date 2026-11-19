@@ -16,6 +16,7 @@
       <nav class="site-nav">
         <a href="/">Workshops</a>
         {% if user %}
+        <a href="/my-bookings">My bookings</a>
         <span class="nav-user">Hi, {{ user.display_name }}</span>
         <form method="post" action="/logout">
           <button class="link-button" type="submit">Log out</button>

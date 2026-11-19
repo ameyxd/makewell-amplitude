@@ -7,41 +7,12 @@ from fastapi.testclient import TestClient
 
 from app import db
 from app.main import app
-
-GOOD_CARD = {
-    "card_name": "Robin Example",
-    "card_number": "4242 4242 4242 4242",
-    "card_expiry": "11/27",
-    "card_cvc": "123",
-}
-
-
-def sessions_for(slug):
-    """The upcoming sessions of one workshop, soonest first."""
-    return db.list_sessions(db.get_workshop(slug)["id"])
-
-
-def seats_taken(workshop_session_id):
-    return db.get_session(workshop_session_id)["seats_taken"]
+from helpers import GOOD_CARD, seats_taken, sessions_for, sign_up, start
 
 
 def booking_count():
     with db.connect() as conn:
         return conn.execute("SELECT COUNT(*) FROM bookings").fetchone()[0]
-
-
-def sign_up(client, email):
-    return client.post(
-        "/signup",
-        data={"display_name": "Robin", "email": email, "password": "correct-horse"},
-    )
-
-
-def start(client, workshop_session_id, seats=1):
-    return client.post(
-        "/bookings/start",
-        data={"workshop_session_id": workshop_session_id, "seats": seats},
-    )
 
 
 def test_guest_is_sent_to_sign_up_before_paying():

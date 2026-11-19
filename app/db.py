@@ -179,6 +179,48 @@ def get_booking(booking_id):
         ).fetchone()
 
 
+def list_bookings(user_id):
+    """Every booking one user has made, newest first."""
+    with connect() as conn:
+        return conn.execute(
+            """
+            SELECT b.*, s.starts_at, w.name AS workshop_name, w.slug, w.category
+            FROM bookings b
+            JOIN workshop_sessions s ON s.id = b.workshop_session_id
+            JOIN workshops w ON w.id = s.workshop_id
+            WHERE b.user_id = ?
+            ORDER BY b.id DESC
+            """,
+            (user_id,),
+        ).fetchall()
+
+
+def cancel_booking(booking):
+    """Mark a booking cancelled and give its seats back.
+
+    Returns False if it was already cancelled. The "AND status = 'confirmed'"
+    check means a second cancel changes nothing, so seats are never
+    returned twice.
+    """
+    with connect() as conn:
+        cancelled = conn.execute(
+            """
+            UPDATE bookings
+            SET status = 'cancelled', cancelled_at = ?
+            WHERE id = ? AND status = 'confirmed'
+            """,
+            (now_text(), booking["id"]),
+        )
+        if cancelled.rowcount == 0:
+            return False
+
+        conn.execute(
+            "UPDATE workshop_sessions SET seats_taken = seats_taken - ? WHERE id = ?",
+            (booking["seats"], booking["workshop_session_id"]),
+        )
+        return True
+
+
 def create_user(email, display_name, password_hash, salt):
     """Save a new user and return their id, e.g. 'usr_3f9a...'."""
     user_id = "usr_" + uuid.uuid4().hex

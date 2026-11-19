@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+
+{% block title %}My bookings · Makewell{% endblock %}
+
+{% block content %}
+<section class="page-head">
+  <h1>My bookings</h1>
+</section>
+
+{% if not bookings %}
+<p class="lede">You have no bookings yet. <a href="/">Find a workshop</a></p>
+{% endif %}
+
+<ul class="booking-list">
+  {% for booking in bookings %}
+  <li class="booking{% if booking.status == 'cancelled' %} is-cancelled{% endif %}">
+    <div class="booking-main">
+      <h2><a href="/workshops/{{ booking.slug }}">{{ booking.workshop_name }}</a></h2>
+      <p>
+        {{ booking.starts_at|nice_date }} &middot;
+        {{ booking.seats }} {{ "seat" if booking.seats == 1 else "seats" }} &middot;
+        reference #{{ booking.id }}
+      </p>
+    </div>
+
+    <div class="booking-side">
+      {% if booking.status == 'cancelled' %}
+      <span class="badge badge-out">Cancelled</span>
+      <span class="booking-amount">{{ booking.amount_pence|pounds }} refunded</span>
+      {% else %}
+      <span class="badge badge-ok">Confirmed</span>
+      <span class="booking-amount">{{ booking.amount_pence|pounds }} paid</span>
+      {% if booking.starts_at > now %}
+      <form method="post" action="/bookings/{{ booking.id }}/cancel">
+        <button class="link-button danger" type="submit">Cancel booking</button>
+      </form>
+      {% endif %}
+      {% endif %}
+    </div>
+  </li>
+  {% endfor %}
+</ul>
+{% endblock %}

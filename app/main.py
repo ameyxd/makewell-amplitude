@@ -311,3 +311,37 @@ def booking_confirmed(request: Request, booking_id: int):
         return render(request, "not_found.html", status_code=404)
 
     return render(request, "confirmed.html", {"booking": booking})
+
+
+# --- My bookings ---
+
+@app.get("/my-bookings")
+def my_bookings(request: Request):
+    """Everything the logged-in user has booked."""
+    user = current_user(request)
+    if user is None:
+        return RedirectResponse("/login", status_code=303)
+
+    return render(
+        request,
+        "my_bookings.html",
+        {"bookings": db.list_bookings(user["id"]), "now": db.now_text()},
+    )
+
+
+@app.post("/bookings/{booking_id}/cancel")
+def cancel_booking(request: Request, booking_id: int):
+    """Cancel a booking for a full refund.
+
+    Only the person who booked can cancel, and only before the workshop starts.
+    """
+    user = current_user(request)
+    booking = db.get_booking(booking_id)
+
+    if user is None or booking is None or booking["user_id"] != user["id"]:
+        return render(request, "not_found.html", status_code=404)
+
+    if booking["starts_at"] > db.now_text():
+        db.cancel_booking(booking)
+
+    return RedirectResponse("/my-bookings", status_code=303)
