@@ -5,6 +5,9 @@
 {% block content %}
 <section class="form-card">
   <h1>Create your account</h1>
+  {% if has_pending_booking %}
+  <p class="notice">Almost there. Create an account to finish your booking.</p>
+  {% endif %}
   <p class="hint">This is a demo. Use a made-up email such as robin@example.com.</p>
 
   {% if error %}

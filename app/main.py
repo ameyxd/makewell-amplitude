@@ -9,9 +9,18 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from starlette.middleware.sessions import SessionMiddleware
 
-from app import auth, db, seed
+from app import auth, db, payments, seed
 
 APP_DIR = Path(__file__).parent
+
+MAX_SEATS = 4  # the most seats one booking can take
+
+# What the checkout page says for each way a booking can fail.
+FAILURE_MESSAGES = {
+    "invalid_details": "Invalid card details.",
+    "session_full": "Sorry, this date no longer has enough seats. You have not been charged.",
+    "card_declined": "Your card was declined. You have not been charged.",
+}
 
 # Runs once when the app starts: create the tables, add starter data if empty.
 db.init_db()
@@ -69,9 +78,38 @@ def render(request, template, context=None, status_code=200):
     """Build a page. Adds `user` so the header can show who is logged in."""
     context = context or {}
     context["user"] = current_user(request)
+    context["has_pending_booking"] = "pending" in request.session
     return templates.TemplateResponse(
         request, template, context, status_code=status_code
     )
+
+
+def pending_booking(request):
+    """The session and seats this visitor chose, with the total price.
+
+    The choice is kept in the login cookie under "pending" until they pay.
+    Returns None if they have not chosen anything.
+    """
+    pending = request.session.get("pending")
+    if pending is None:
+        return None
+
+    workshop_session = db.get_session(pending["workshop_session_id"])
+    if workshop_session is None:
+        return None
+
+    return {
+        "workshop_session": workshop_session,
+        "seats": pending["seats"],
+        "amount_pence": workshop_session["price_pence"] * pending["seats"],
+    }
+
+
+def after_login(request):
+    """Where to send someone who has just signed up or logged in."""
+    if "pending" in request.session:
+        return RedirectResponse("/checkout", status_code=303)
+    return RedirectResponse("/", status_code=303)
 
 
 # --- Browse ---
@@ -137,7 +175,7 @@ def signup(
         email, display_name, auth.hash_password(password, salt), salt
     )
     request.session["user_id"] = user_id
-    return RedirectResponse("/", status_code=303)
+    return after_login(request)
 
 
 @app.get("/login")
@@ -162,10 +200,114 @@ def login(request: Request, email: str = Form(""), password: str = Form("")):
         )
 
     request.session["user_id"] = user["id"]
-    return RedirectResponse("/", status_code=303)
+    return after_login(request)
 
 
 @app.post("/logout")
 def logout(request: Request):
     request.session.clear()
     return RedirectResponse("/", status_code=303)
+
+
+# --- Booking ---
+
+@app.post("/bookings/start")
+def start_booking(
+    request: Request,
+    workshop_session_id: int = Form(0),
+    seats: int = Form(1),
+):
+    """Remember the chosen session and seats, then go to checkout."""
+    workshop_session = db.get_session(workshop_session_id)
+    if workshop_session is None:
+        return render(request, "not_found.html", status_code=404)
+
+    if seats < 1 or seats > MAX_SEATS or seats > workshop_session["seats_left"]:
+        workshop = db.get_workshop(workshop_session["slug"])
+        return render(
+            request,
+            "workshop.html",
+            {
+                "workshop": workshop,
+                "sessions": db.list_sessions(workshop["id"]),
+                "error": "That date does not have enough seats left.",
+            },
+            status_code=400,
+        )
+
+    request.session["pending"] = {
+        "workshop_session_id": workshop_session_id,
+        "seats": seats,
+    }
+    return RedirectResponse("/checkout", status_code=303)
+
+
+@app.get("/checkout")
+def checkout_form(request: Request):
+    """The payment page. Guests are sent to sign up first: the account wall."""
+    if current_user(request) is None:
+        return RedirectResponse("/signup", status_code=303)
+
+    order = pending_booking(request)
+    if order is None:
+        return RedirectResponse("/", status_code=303)
+
+    return render(request, "checkout.html", {"order": order})
+
+
+@app.post("/checkout")
+def checkout(
+    request: Request,
+    card_name: str = Form(""),
+    card_number: str = Form(""),
+    card_expiry: str = Form(""),
+    card_cvc: str = Form(""),
+):
+    """Check the card, check the seats, charge, then save the booking."""
+    user = current_user(request)
+    if user is None:
+        return RedirectResponse("/signup", status_code=303)
+
+    order = pending_booking(request)
+    if order is None:
+        return RedirectResponse("/", status_code=303)
+
+    workshop_session = order["workshop_session"]
+    booking_id = None
+    reason = None  # why the booking failed, if it did
+
+    if not payments.card_details_ok(card_name, card_number, card_expiry, card_cvc):
+        reason = "invalid_details"
+    elif workshop_session["seats_left"] < order["seats"]:
+        reason = "session_full"
+    elif payments.charge(card_number, order["amount_pence"]) == "declined":
+        reason = "card_declined"
+    else:
+        booking_id = db.create_booking(
+            user["id"], workshop_session["id"], order["seats"], order["amount_pence"]
+        )
+        if booking_id is None:  # someone took the last seats a moment ago
+            reason = "session_full"
+
+    if reason:
+        return render(
+            request,
+            "checkout.html",
+            {"order": order, "error": FAILURE_MESSAGES[reason], "card_name": card_name},
+            status_code=400,
+        )
+
+    del request.session["pending"]
+    return RedirectResponse(f"/bookings/{booking_id}/confirmed", status_code=303)
+
+
+@app.get("/bookings/{booking_id}/confirmed")
+def booking_confirmed(request: Request, booking_id: int):
+    """The confirmation page. Only the person who booked can see it."""
+    user = current_user(request)
+    booking = db.get_booking(booking_id)
+
+    if user is None or booking is None or booking["user_id"] != user["id"]:
+        return render(request, "not_found.html", status_code=404)
+
+    return render(request, "confirmed.html", {"booking": booking})

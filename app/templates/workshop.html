@@ -31,23 +31,48 @@
   </div>
 
   <aside class="detail-side">
-    <h2>Upcoming dates</h2>
-    <ul class="session-list">
-      {% for session in sessions %}
-      <li class="session{% if session.seats_left == 0 %} is-full{% endif %}">
-        <span class="session-date">{{ session.starts_at|nice_date }}</span>
-        {% if session.seats_left == 0 %}
-        <span class="badge badge-out">Sold out</span>
-        {% elif session.seats_left <= 3 %}
-        <span class="badge badge-low">{{ session.seats_left }} left</span>
+    <h2>Choose a date</h2>
+
+    {% if error %}
+    <p class="form-error" role="alert">{{ error }}</p>
+    {% endif %}
+
+    <form method="post" action="/bookings/start">
+      <ul class="session-list">
+        {% for session in sessions %}
+        <li>
+          <label class="session{% if session.seats_left == 0 %} is-full{% endif %}">
+            <input type="radio" name="workshop_session_id" value="{{ session.id }}"
+                   required {% if session.seats_left == 0 %}disabled{% endif %}>
+            <span class="session-date">{{ session.starts_at|nice_date }}</span>
+            {% if session.seats_left == 0 %}
+            <span class="badge badge-out">Sold out</span>
+            {% elif session.seats_left <= 3 %}
+            <span class="badge badge-low">{{ session.seats_left }} left</span>
+            {% else %}
+            <span class="badge badge-ok">{{ session.seats_left }} seats left</span>
+            {% endif %}
+          </label>
+        </li>
         {% else %}
-        <span class="badge badge-ok">{{ session.seats_left }} seats left</span>
-        {% endif %}
-      </li>
-      {% else %}
-      <li class="session">No upcoming dates yet.</li>
-      {% endfor %}
-    </ul>
+        <li class="session">No upcoming dates yet.</li>
+        {% endfor %}
+      </ul>
+
+      <label for="seats">Seats</label>
+      <select id="seats" name="seats">
+        <option value="1">1 seat</option>
+        <option value="2">2 seats</option>
+        <option value="3">3 seats</option>
+        <option value="4">4 seats</option>
+      </select>
+
+      <button class="button button-wide" type="submit">Book this workshop</button>
+    </form>
+
+    {% if not user %}
+    <p class="hint">You'll create an account before paying.</p>
+    {% endif %}
   </aside>
 </article>
 {% endblock %}

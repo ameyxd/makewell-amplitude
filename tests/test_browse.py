@@ -18,7 +18,7 @@ def test_home_lists_every_workshop():
 def test_detail_shows_dates_and_seats_left():
     page = client.get("/workshops/wheel-throwing")
     assert page.status_code == 200
-    assert "Upcoming dates" in page.text
+    assert "Choose a date" in page.text
     assert "6 seats left" in page.text  # capacity 8, 2 taken
 
 

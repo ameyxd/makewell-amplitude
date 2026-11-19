@@ -5,6 +5,9 @@
 {% block content %}
 <section class="form-card">
   <h1>Welcome back</h1>
+  {% if has_pending_booking %}
+  <p class="notice">Log in to finish your booking.</p>
+  {% endif %}
 
   {% if error %}
   <p class="form-error" role="alert">{{ error }}</p>

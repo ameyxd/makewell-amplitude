@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+
+{% block title %}Booking confirmed · Makewell{% endblock %}
+
+{% block content %}
+<section class="form-card confirmed">
+  <p class="eyebrow">Booking confirmed</p>
+  <h1>You're booked, {{ user.display_name }}.</h1>
+
+  <div class="summary summary-plain">
+    <dl>
+      <div>
+        <dt>Workshop</dt>
+        <dd>{{ booking.workshop_name }}</dd>
+      </div>
+      <div>
+        <dt>Date</dt>
+        <dd>{{ booking.starts_at|nice_date }}</dd>
+      </div>
+      <div>
+        <dt>Seats</dt>
+        <dd>{{ booking.seats }}</dd>
+      </div>
+      <div class="summary-total">
+        <dt>Paid</dt>
+        <dd>{{ booking.amount_pence|pounds }}</dd>
+      </div>
+    </dl>
+  </div>
+
+  <p class="hint">Booking reference #{{ booking.id }}</p>
+  <a class="button" href="/">Browse more workshops</a>
+</section>
+{% endblock %}

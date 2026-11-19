@@ -328,16 +328,19 @@ main.wrap {
   padding: 0;
 }
 
+/* one row per date: radio button, date, seats badge */
 .session {
   display: flex;
-  justify-content: space-between;
   align-items: center;
   gap: 12px;
+  margin: 0;
   padding: 14px 0;
   border-top: 1px solid var(--line);
+  cursor: pointer;
 }
 
-.session-date { font-weight: 600; }
+.session-date { font-weight: 600; margin-right: auto; }
+.session.is-full { cursor: default; }
 .session.is-full .session-date { color: var(--muted); font-weight: 400; }
 
 /* ---------- Forms and buttons ---------- */
@@ -360,7 +363,8 @@ label {
   font-weight: 600;
 }
 
-input {
+input,
+select {
   width: 100%;
   padding: 11px 13px;
   border: 1px solid var(--line);
@@ -370,11 +374,93 @@ input {
   font: inherit;
 }
 
-input:focus {
+input:focus,
+select:focus {
   outline: 2px solid var(--clay);
   outline-offset: 1px;
   border-color: var(--clay);
 }
+
+/* radio buttons keep their natural size */
+input[type="radio"] {
+  width: auto;
+  accent-color: var(--clay);
+}
+
+/* two fields side by side, e.g. expiry and security code */
+.field-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.notice {
+  margin: 0 0 12px;
+  padding: 10px 14px;
+  border-radius: 8px;
+  background: var(--sage-soft);
+  color: var(--sage);
+  font-size: 15px;
+  font-weight: 500;
+}
+
+.demo-note {
+  margin-top: 22px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+}
+
+.button-wide { width: 100%; text-align: center; }
+
+/* ---------- Checkout and confirmation ---------- */
+
+.checkout {
+  display: grid;
+  grid-template-columns: minmax(0, 440px) minmax(260px, 340px);
+  gap: 32px;
+  justify-content: center;
+  align-items: start;
+  margin-top: 56px;
+}
+
+.checkout .form-card { margin: 0; max-width: none; }
+
+.summary {
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 26px;
+}
+
+.summary h2 { font-size: 22px; margin-bottom: 8px; }
+.summary dl { margin: 0 0 16px; }
+
+.summary dl div {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.summary dt { color: var(--muted); }
+.summary dd { margin: 0; font-weight: 600; text-align: right; }
+
+.summary .summary-total { border-bottom: 0; }
+
+.summary-total dd {
+  font-family: var(--serif);
+  font-size: 22px;
+}
+
+/* the same list inside the confirmation card, without its own box */
+.summary-plain {
+  border: 0;
+  padding: 0;
+  margin: 20px 0 4px;
+}
+
+.confirmed .eyebrow { margin-bottom: 10px; }
 
 .hint {
   margin: 6px 0 0;
@@ -454,6 +540,7 @@ input:focus {
 
 @media (max-width: 760px) {
   .detail { grid-template-columns: 1fr; gap: 28px; }
+  .checkout { grid-template-columns: 1fr; margin-top: 32px; }
   .detail-side { position: static; }
   .facts { grid-template-columns: 1fr; }
   .hero { padding: 40px 0 32px; }

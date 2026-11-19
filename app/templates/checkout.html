@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+
+{% block title %}Checkout · Makewell{% endblock %}
+
+{% block content %}
+<section class="checkout">
+  <div class="form-card">
+    <h1>Checkout</h1>
+
+    {% if error %}
+    <p class="form-error" role="alert">{{ error }}</p>
+    {% endif %}
+
+    {# autocomplete is off so the browser never offers a real saved card #}
+    <form method="post" action="/checkout" id="checkout-form" autocomplete="off">
+      <label for="card_name">Name on card</label>
+      <input id="card_name" name="card_name" type="text"
+             value="{{ card_name or '' }}" required>
+
+      <label for="card_number">Card number</label>
+      <input id="card_number" name="card_number" type="text" inputmode="numeric" required>
+
+      <div class="field-row">
+        <div>
+          <label for="card_expiry">Expiry date</label>
+          <input id="card_expiry" name="card_expiry" type="text" required>
+        </div>
+        <div>
+          <label for="card_cvc">Security code</label>
+          <input id="card_cvc" name="card_cvc" type="text" inputmode="numeric" required>
+        </div>
+      </div>
+
+      <button class="button button-wide" type="submit">Pay {{ order.amount_pence|pounds }}</button>
+    </form>
+
+    <p class="hint demo-note">
+      Demo only, no real payment. Use card 4242 4242 4242 4242 to pay, or
+      4000 0000 0000 0002 to see a declined card. Any 3-digit security code.
+    </p>
+  </div>
+
+  <aside class="summary">
+    <h2>Your booking</h2>
+    <dl>
+      <div>
+        <dt>Workshop</dt>
+        <dd>{{ order.workshop_session.workshop_name }}</dd>
+      </div>
+      <div>
+        <dt>Date</dt>
+        <dd>{{ order.workshop_session.starts_at|nice_date }}</dd>
+      </div>
+      <div>
+        <dt>Seats</dt>
+        <dd>{{ order.seats }} &times; {{ order.workshop_session.price_pence|pounds }}</dd>
+      </div>
+      <div class="summary-total">
+        <dt>Total</dt>
+        <dd>{{ order.amount_pence|pounds }}</dd>
+      </div>
+    </dl>
+    <a href="/workshops/{{ order.workshop_session.slug }}">Change date or seats</a>
+  </aside>
+</section>
+{% endblock %}

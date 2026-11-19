@@ -40,6 +40,17 @@ CREATE TABLE IF NOT EXISTS users (
     salt          TEXT NOT NULL,
     created_at    TEXT NOT NULL
 );
+
+CREATE TABLE IF NOT EXISTS bookings (
+    id                  INTEGER PRIMARY KEY,
+    user_id             TEXT NOT NULL REFERENCES users (id),
+    workshop_session_id INTEGER NOT NULL REFERENCES workshop_sessions (id),
+    seats               INTEGER NOT NULL,
+    amount_pence        INTEGER NOT NULL,
+    status              TEXT NOT NULL DEFAULT 'confirmed',
+    created_at          TEXT NOT NULL,
+    cancelled_at        TEXT
+);
 """
 
 
@@ -104,6 +115,68 @@ def list_sessions(workshop_id):
             """,
             (workshop_id, now_text()),
         ).fetchall()
+
+
+def get_session(workshop_session_id):
+    """One dated session, with its workshop's name and price. None if missing."""
+    with connect() as conn:
+        return conn.execute(
+            """
+            SELECT s.*,
+                   s.capacity - s.seats_taken AS seats_left,
+                   w.slug, w.name AS workshop_name, w.category,
+                   w.price_pence, w.tone
+            FROM workshop_sessions s
+            JOIN workshops w ON w.id = s.workshop_id
+            WHERE s.id = ?
+            """,
+            (workshop_session_id,),
+        ).fetchone()
+
+
+def create_booking(user_id, workshop_session_id, seats, amount_pence):
+    """Take the seats and save the booking.
+
+    Returns the new booking's id, or None if there were not enough seats.
+    The UPDATE only changes a row when enough seats remain, so two people
+    booking at the same moment cannot both get the last seat.
+    """
+    with connect() as conn:
+        taken = conn.execute(
+            """
+            UPDATE workshop_sessions
+            SET seats_taken = seats_taken + ?
+            WHERE id = ? AND capacity - seats_taken >= ?
+            """,
+            (seats, workshop_session_id, seats),
+        )
+        if taken.rowcount == 0:
+            return None
+
+        booking = conn.execute(
+            """
+            INSERT INTO bookings
+                (user_id, workshop_session_id, seats, amount_pence, created_at)
+            VALUES (?, ?, ?, ?, ?)
+            """,
+            (user_id, workshop_session_id, seats, amount_pence, now_text()),
+        )
+        return booking.lastrowid
+
+
+def get_booking(booking_id):
+    """One booking, with its workshop name and date. None if missing."""
+    with connect() as conn:
+        return conn.execute(
+            """
+            SELECT b.*, s.starts_at, w.name AS workshop_name, w.slug, w.category
+            FROM bookings b
+            JOIN workshop_sessions s ON s.id = b.workshop_session_id
+            JOIN workshops w ON w.id = s.workshop_id
+            WHERE b.id = ?
+            """,
+            (booking_id,),
+        ).fetchone()
 
 
 def create_user(email, display_name, password_hash, salt):
