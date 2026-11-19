@@ -15,6 +15,15 @@
       <a class="wordmark" href="/">Makewell<span class="wordmark-dot">.</span></a>
       <nav class="site-nav">
         <a href="/">Workshops</a>
+        {% if user %}
+        <span class="nav-user">Hi, {{ user.display_name }}</span>
+        <form method="post" action="/logout">
+          <button class="link-button" type="submit">Log out</button>
+        </form>
+        {% else %}
+        <a href="/login">Log in</a>
+        <a class="button button-small" href="/signup">Sign up</a>
+        {% endif %}
       </nav>
     </div>
   </header>

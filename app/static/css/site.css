@@ -75,15 +75,22 @@ a:hover { color: var(--clay-dark); }
 .wordmark:hover { color: var(--ink); }
 .wordmark-dot { color: var(--clay); }
 
+.site-nav {
+  display: flex;
+  align-items: center;
+  gap: 22px;
+  font-size: 15px;
+}
+
 .site-nav a {
   color: var(--ink);
   text-decoration: none;
   font-weight: 500;
-  font-size: 15px;
-  margin-left: 24px;
 }
 
 .site-nav a:hover { color: var(--clay); }
+
+.nav-user { color: var(--muted); }
 
 main.wrap {
   padding-top: 8px;
@@ -332,6 +339,102 @@ main.wrap {
 
 .session-date { font-weight: 600; }
 .session.is-full .session-date { color: var(--muted); font-weight: 400; }
+
+/* ---------- Forms and buttons ---------- */
+
+.form-card {
+  max-width: 440px;
+  margin: 56px auto 0;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 36px;
+}
+
+.form-card h1 { font-size: 32px; margin-bottom: 10px; }
+
+label {
+  display: block;
+  margin: 20px 0 6px;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+input {
+  width: 100%;
+  padding: 11px 13px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+  color: var(--ink);
+  font: inherit;
+}
+
+input:focus {
+  outline: 2px solid var(--clay);
+  outline-offset: 1px;
+  border-color: var(--clay);
+}
+
+.hint {
+  margin: 6px 0 0;
+  font-size: 14px;
+  color: var(--muted);
+}
+
+.form-error {
+  margin: 18px 0 0;
+  padding: 10px 14px;
+  border-radius: 8px;
+  background: #fbe5df;
+  color: #8b2c14;
+  font-size: 15px;
+  font-weight: 500;
+}
+
+.form-switch {
+  margin: 24px 0 0;
+  font-size: 15px;
+  color: var(--muted);
+}
+
+.button {
+  display: inline-block;
+  margin-top: 26px;
+  padding: 12px 22px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--clay);
+  color: #fff;
+  font: inherit;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.button:hover { background: var(--clay-dark); color: #fff; }
+
+/* the smaller button in the header */
+.site-nav .button-small {
+  margin-top: 0;
+  padding: 7px 16px;
+  color: #fff;
+}
+
+.site-nav .button-small:hover { color: #fff; }
+
+/* a button that looks like a plain link, used for "Log out" */
+.link-button {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--ink);
+  font: inherit;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.link-button:hover { color: var(--clay); }
 
 /* ---------- Small pieces ---------- */
 

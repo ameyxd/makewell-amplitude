@@ -5,6 +5,7 @@ connection, does one job and closes it again.
 """
 import os
 import sqlite3
+import uuid
 from contextlib import contextmanager
 from datetime import datetime
 
@@ -29,6 +30,15 @@ CREATE TABLE IF NOT EXISTS workshop_sessions (
     starts_at   TEXT NOT NULL,
     capacity    INTEGER NOT NULL,
     seats_taken INTEGER NOT NULL DEFAULT 0
+);
+
+CREATE TABLE IF NOT EXISTS users (
+    id            TEXT PRIMARY KEY,
+    email         TEXT NOT NULL UNIQUE,
+    display_name  TEXT NOT NULL,
+    password_hash TEXT NOT NULL,
+    salt          TEXT NOT NULL,
+    created_at    TEXT NOT NULL
 );
 """
 
@@ -94,3 +104,34 @@ def list_sessions(workshop_id):
             """,
             (workshop_id, now_text()),
         ).fetchall()
+
+
+def create_user(email, display_name, password_hash, salt):
+    """Save a new user and return their id, e.g. 'usr_3f9a...'."""
+    user_id = "usr_" + uuid.uuid4().hex
+    with connect() as conn:
+        conn.execute(
+            """
+            INSERT INTO users
+                (id, email, display_name, password_hash, salt, created_at)
+            VALUES (?, ?, ?, ?, ?, ?)
+            """,
+            (user_id, email, display_name, password_hash, salt, now_text()),
+        )
+    return user_id
+
+
+def get_user(user_id):
+    """One user by id, or None."""
+    with connect() as conn:
+        return conn.execute(
+            "SELECT * FROM users WHERE id = ?", (user_id,)
+        ).fetchone()
+
+
+def get_user_by_email(email):
+    """One user by email, or None."""
+    with connect() as conn:
+        return conn.execute(
+            "SELECT * FROM users WHERE email = ?", (email,)
+        ).fetchone()
