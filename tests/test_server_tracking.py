@@ -51,7 +51,11 @@ def test_sign_up_sends_account_created_with_the_browsers_ids(sent):
     assert event.user_id == user["id"]
     assert event.device_id == "device-abc123"
     assert event.session_id == 1763700000000
-    assert event.event_properties == {"signup_source": "direct"}
+    assert event.event_properties == {
+        "signup_source": "direct",
+        # Phase 7: links the event to the Session Replay of the same visit.
+        "[Amplitude] Session Replay ID": "device-abc123/1763700000000",
+    }
     assert "signup_date" in event.user_properties["$setOnce"]
 
 
@@ -61,7 +65,7 @@ def test_sign_up_during_a_booking_is_marked_as_from_checkout(sent):
     sign_up(client, "t-wall@example.com")
 
     event = sent.named("Account Created")[0]
-    assert event.event_properties == {"signup_source": "checkout"}
+    assert event.event_properties["signup_source"] == "checkout"
 
 
 def test_log_in_sends_logged_in(sent):
@@ -126,6 +130,7 @@ def test_events_are_still_sent_without_the_browser_cookies(sent):
     assert event.user_id.startswith("usr_")
     assert event.device_id is None
     assert event.session_id is None
+    assert event.event_properties == {"signup_source": "direct"}  # no replay link
 
 
 def test_a_tampered_session_cookie_is_ignored(sent):

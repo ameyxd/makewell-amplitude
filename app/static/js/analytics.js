@@ -15,6 +15,29 @@ const userId = body.dataset.userId || undefined;   // empty for guests
 
 
 // 1. Start Amplitude.
+//
+//    First, Session Replay. It is a plugin: adding it to `amplitude` before
+//    init() makes it record with the same device ID and session ID as every
+//    event, which is what links a replay to a user and their events.
+//
+//    sampleRate: the share of sessions to record. 1 means all of them, which
+//                suits a demo. A busy site would use a small fraction.
+//    Privacy:    'medium' replaces everything typed into any form field with
+//                asterisks before it leaves the browser. On top of that, any
+//                element marked data-private in the HTML has its text hidden
+//                (we mark the visitor's name wherever a page shows it).
+
+if (window.sessionReplay) {
+  amplitude.add(window.sessionReplay.plugin({
+    sampleRate: 1,
+    privacyConfig: {
+      defaultMaskLevel: 'medium',
+      maskSelector: ['[data-private]'],
+    },
+  }));
+}
+
+//    Then the SDK itself.
 //    Guests get a random device ID. Logged-in users also get their user ID,
 //    which is how Amplitude joins a guest's earlier activity to the account.
 

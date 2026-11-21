@@ -34,7 +34,8 @@ def test_guest_can_book_from_workshop_to_confirmation():
     assert "£84" in page.text                # 2 seats at £42
 
     page = client.post("/checkout", data=GOOD_CARD)
-    assert "booked, Robin" in page.text
+    assert "You're booked" in page.text
+    assert ">Robin</span>" in page.text
     assert seats_taken(session["id"]) == before + 2
 
 

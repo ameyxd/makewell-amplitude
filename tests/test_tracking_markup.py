@@ -21,8 +21,26 @@ def test_tracking_scripts_load_when_a_key_is_set(monkeypatch):
     monkeypatch.setattr(analytics, "API_KEY", "test-key")
     page = TestClient(app).get("/")
     assert 'data-amplitude-key="test-key"' in page.text
-    # Amplitude's script must come before ours.
-    assert page.text.index("cdn.amplitude.com") < page.text.index("analytics.js")
+    # Amplitude's two scripts must come before ours, the SDK first.
+    sdk = page.text.index("analytics-browser")
+    replay = page.text.index("plugin-session-replay-browser")
+    ours = page.text.index("/static/js/analytics.js")
+    assert sdk < replay < ours
+
+
+def test_the_visitors_name_is_marked_private_for_session_replay():
+    """Phase 7. Replay hides the text of anything marked data-private."""
+    session = sessions_for("linocut")[2]
+    client = TestClient(app)
+    sign_up(client, "replay@example.com", name="Zephyrine")
+    start(client, session["id"])
+    confirmed = client.post("/checkout", data=GOOD_CARD)
+
+    # Header greeting plus the confirmation heading: the name is shown twice,
+    # and both times it sits directly inside a tag carrying the marker.
+    assert confirmed.text.count("Zephyrine") == 2
+    assert "data-private>Hi, Zephyrine<" in confirmed.text
+    assert "<span data-private>Zephyrine</span>" in confirmed.text
 
 
 def test_guest_page_has_an_empty_user_id():

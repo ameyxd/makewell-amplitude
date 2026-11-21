@@ -22,7 +22,8 @@
         <a href="/">Workshops</a>
         {% if user %}
         <a href="/my-bookings">My bookings</a>
-        <span class="nav-user">Hi, {{ user.display_name }}</span>
+        {# data-private: Session Replay hides this text. See analytics.js. #}
+        <span class="nav-user" data-private>Hi, {{ user.display_name }}</span>
         <form method="post" action="/logout" id="logout-form">
           <button class="link-button" type="submit">Log out</button>
         </form>
@@ -42,10 +43,12 @@
     <div class="wrap">Makewell is a demo. Every workshop, person and payment here is fake.</div>
   </footer>
 
-  {# Tracking. Amplitude's script must come first: it creates `amplitude`,
-     which our file then uses. With no API key, nothing is loaded. #}
+  {# Tracking. Amplitude's scripts must come first: the first creates
+     `amplitude`, the second adds Session Replay to it, and our file then
+     uses both. With no API key, nothing is loaded. #}
   {% if amplitude_key %}
   <script src="https://cdn.amplitude.com/libs/analytics-browser-2.49.3-min.js.gz"></script>
+  <script src="https://cdn.amplitude.com/libs/plugin-session-replay-browser-1.37.1-min.js.gz"></script>
   <script src="/static/js/analytics.js"></script>
   {% endif %}
 </body>

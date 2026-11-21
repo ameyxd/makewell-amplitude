@@ -70,6 +70,13 @@ def track(
         user_changes["$add"] = add
 
     device_id, session_id = browser_ids(request)
+
+    # Link the event to the Session Replay of this visit. The browser SDK
+    # adds this same property to its own events; a replay is named after the
+    # device ID and session ID it was recorded with.
+    if device_id and session_id:
+        properties["[Amplitude] Session Replay ID"] = f"{device_id}/{session_id}"
+
     client.track(
         BaseEvent(
             event_type=event_type,
