@@ -43,6 +43,16 @@ if (window.sessionReplay) {
   }));
 }
 
+//    Second, Guides and Surveys, also a plugin. It fetches the guides built
+//    in Amplitude's website and shows them on our pages, so a message can
+//    be added or changed without touching this code. Adding it before
+//    init() means it starts knowing who the visitor is, and it sends its
+//    own events (such as "Guide Viewed") through the same SDK.
+
+if (window.engagement) {
+  amplitude.add(window.engagement.plugin());
+}
+
 //    Then the SDK itself.
 //    Guests get a random device ID. Logged-in users also get their user ID,
 //    which is how Amplitude joins a guest's earlier activity to the account.

@@ -21,11 +21,12 @@ def test_tracking_scripts_load_when_a_key_is_set(monkeypatch):
     monkeypatch.setattr(analytics, "API_KEY", "test-key")
     page = TestClient(app).get("/")
     assert 'data-amplitude-key="test-key"' in page.text
-    # Amplitude's two scripts must come before ours, the SDK first.
+    # Amplitude's three scripts must come before ours, the SDK first.
     sdk = page.text.index("analytics-browser")
     replay = page.text.index("plugin-session-replay-browser")
+    guides = page.text.index("/script/test-key.engagement.js")
     ours = page.text.index("/static/js/analytics.js")
-    assert sdk < replay < ours
+    assert sdk < replay < guides < ours
     # Our script's address carries a version, so an edited file is never
     # served from a browser's old copy.
     assert "/static/js/analytics.js?v=" in page.text
@@ -83,6 +84,8 @@ def test_checkout_page_describes_the_order():
     assert 'data-seats="2"' in page.text
     assert 'data-order-value="130.0"' in page.text      # 2 seats at £65
     assert 'data-currency="GBP"' in page.text
+    # Phase 8. The guide built in Amplitude pins its hint to this id.
+    assert 'id="card_expiry"' in page.text
 
 
 def test_failed_payment_page_is_not_counted_as_a_new_checkout():

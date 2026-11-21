@@ -46,11 +46,14 @@
   </footer>
 
   {# Tracking. Amplitude's scripts must come first: the first creates
-     `amplitude`, the second adds Session Replay to it, and our file then
-     uses both. With no API key, nothing is loaded. #}
+     `amplitude`, the second brings Session Replay, the third brings Guides
+     and Surveys, and our file then uses all three. Amplitude builds the
+     third script per project, which is why the API key is in its address.
+     With no API key, nothing is loaded. #}
   {% if amplitude_key %}
   <script src="https://cdn.amplitude.com/libs/analytics-browser-2.49.3-min.js.gz"></script>
   <script src="https://cdn.amplitude.com/libs/plugin-session-replay-browser-1.37.1-min.js.gz"></script>
+  <script src="https://cdn.amplitude.com/script/{{ amplitude_key }}.engagement.js"></script>
   <script src="{{ static_url('js/analytics.js') }}"></script>
   {% endif %}
 </body>
