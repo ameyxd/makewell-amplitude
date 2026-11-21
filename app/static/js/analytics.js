@@ -49,16 +49,6 @@ if (window.sessionReplay) {
   }));
 }
 
-//    Second, Guides and Surveys, also a plugin. It fetches the guides built
-//    in Amplitude's website and shows them on our pages, so a message can
-//    be added or changed without touching this code. Adding it before
-//    init() means it starts knowing who the visitor is, and it sends its
-//    own events (such as "Guide Viewed") through the same SDK.
-
-if (window.engagement) {
-  amplitude.add(window.engagement.plugin());
-}
-
 //    Then the SDK itself.
 //    Guests get a random device ID. Logged-in users also get their user ID,
 //    which is how Amplitude joins a guest's earlier activity to the account.
@@ -87,6 +77,22 @@ const started = amplitude.init(body.dataset.amplitudeKey, userId, {
 started.promise.then(() => {
   document.cookie = 'mw_device_id=' + amplitude.getDeviceId() + '; path=/; SameSite=Lax';
   document.cookie = 'mw_session_id=' + amplitude.getSessionId() + '; path=/; SameSite=Lax';
+
+  // Guides and Surveys, also a plugin. It fetches the guides built in
+  // Amplitude's website and shows them on our pages, so a message can be
+  // added or changed without touching this code. It sends its own events
+  // (such as "Guide Viewed") through the same SDK.
+  //
+  // It is added here, after the SDK has started, and not before init().
+  // The SDK holds every event until all its plugins are ready, and this
+  // one makes four network calls first. On a visitor's first page that
+  // took 1.4 seconds, and anyone who clicked on sooner lost that page's
+  // events, including where they came from. Amplitude's docs allow adding
+  // it late. The cost: a guide cannot be triggered by an event that fired
+  // before this line ran. Ours is triggered by a click, so that is fine.
+  if (window.engagement) {
+    amplitude.add(window.engagement.plugin());
+  }
 });
 
 
