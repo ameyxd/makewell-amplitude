@@ -27,6 +27,17 @@ def expiry_ok(card_expiry):
     month, year = parts
     if len(month) != 2 or len(year) != 2:
         return False
+    # THE REAL FIX, kept as a comment so the planted friction stays in place.
+    # To accept '11/2027' as well as '11/27', replace the two lines above with:
+    #
+    #     if len(month) != 2 or len(year) not in (2, 4):
+    #         return False
+    #
+    # The year may then be two digits or four. Nothing else changes: the
+    # digit check and the month check below already work for both.
+    # Two tests post '11/2027' and expect it to fail, so they must change too:
+    # the one in tests/test_booking.py should expect a booking, and the one
+    # in tests/test_tracking_markup.py needs another bad value, such as '13/27'.
     if not (month.isdigit() and year.isdigit()):
         return False
     return 1 <= int(month) <= 12
