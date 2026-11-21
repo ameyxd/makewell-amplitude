@@ -10,7 +10,7 @@ Run it with the site already running on port 8000:
     python scripts/simulate_traffic.py        all visitors
     python scripts/simulate_traffic.py 3      only the first 3 (a quick trial)
 
-Two things in here are invented and are said so in the README:
+Two things in here are invented, and docs/spec.md says so too:
 
 1. The mix of visitors (how many browse, give up, pay) is made up.
 2. A visitor who sees the guide's hint always types the expiry date the

@@ -16,7 +16,7 @@ def digits_only(card_number):
 def expiry_ok(card_expiry):
     """True only for MM/YY, e.g. '11/27'.
 
-    PLANTED FRICTION, disclosed in the README: '11/2027' is a perfectly
+    PLANTED FRICTION, documented in docs/spec.md: '11/2027' is a perfectly
     reasonable thing to type, but it fails here, and the page only says
     "Invalid card details". This gives the Session Replay investigation a
     real problem to find.
