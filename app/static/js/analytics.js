@@ -26,10 +26,16 @@ const userId = body.dataset.userId || undefined;   // empty for guests
 //                asterisks before it leaves the browser. On top of that, any
 //                element marked data-private in the HTML has its text hidden
 //                (we mark the visitor's name wherever a page shows it).
+//    storeType:  where the recording waits before it is uploaded. 'idb' is
+//                IndexedDB, a small database inside the browser. Every form
+//                on this site loads a new page, and with the plugin's
+//                in-memory default the last seconds before that were lost.
+//                Stored in the browser, the next page can upload them.
 
 if (window.sessionReplay) {
   amplitude.add(window.sessionReplay.plugin({
     sampleRate: 1,
+    storeType: 'idb',
     privacyConfig: {
       defaultMaskLevel: 'medium',
       maskSelector: ['[data-private]'],
