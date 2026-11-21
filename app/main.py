@@ -69,6 +69,19 @@ def hours_until(text):
     return int((datetime.fromisoformat(text) - datetime.now()).total_seconds() // 3600)
 
 
+def static_url(path):
+    """'js/analytics.js' -> '/static/js/analytics.js?v=1795274000'.
+
+    The number is the time the file was last changed. Browsers keep copies
+    of scripts and stylesheets and may not ask for them again for hours.
+    Editing the file changes the number, the address is then new to the
+    browser, and it has to fetch the new version.
+    """
+    changed = int((APP_DIR / "static" / path).stat().st_mtime)
+    return f"/static/{path}?v={changed}"
+
+
+templates.env.globals["static_url"] = static_url
 templates.env.filters["pounds"] = pounds
 templates.env.filters["nice_date"] = nice_date
 templates.env.filters["duration"] = duration

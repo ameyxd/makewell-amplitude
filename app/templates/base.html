@@ -8,7 +8,9 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/static/css/site.css">
+  {# static_url adds ?v=<time the file last changed>, so an edited file is
+     never served from the browser's old copy. See main.py. #}
+  <link rel="stylesheet" href="{{ static_url('css/site.css') }}">
 </head>
 {# The data-... attributes below are read by static/js/analytics.js.
    Each page adds its own through the body_data block. #}
@@ -49,7 +51,7 @@
   {% if amplitude_key %}
   <script src="https://cdn.amplitude.com/libs/analytics-browser-2.49.3-min.js.gz"></script>
   <script src="https://cdn.amplitude.com/libs/plugin-session-replay-browser-1.37.1-min.js.gz"></script>
-  <script src="/static/js/analytics.js"></script>
+  <script src="{{ static_url('js/analytics.js') }}"></script>
   {% endif %}
 </body>
 </html>

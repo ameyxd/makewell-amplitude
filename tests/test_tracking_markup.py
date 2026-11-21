@@ -26,6 +26,9 @@ def test_tracking_scripts_load_when_a_key_is_set(monkeypatch):
     replay = page.text.index("plugin-session-replay-browser")
     ours = page.text.index("/static/js/analytics.js")
     assert sdk < replay < ours
+    # Our script's address carries a version, so an edited file is never
+    # served from a browser's old copy.
+    assert "/static/js/analytics.js?v=" in page.text
 
 
 def test_the_visitors_name_is_marked_private_for_session_replay():
