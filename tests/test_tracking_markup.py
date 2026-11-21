@@ -6,7 +6,7 @@ Whether events actually reach Amplitude is checked by hand in the browser.
 """
 from fastapi.testclient import TestClient
 
-from app import db, main
+from app import analytics, db
 from app.main import app
 from helpers import GOOD_CARD, sessions_for, sign_up, start
 
@@ -18,7 +18,7 @@ def test_no_tracking_scripts_without_an_api_key():
 
 
 def test_tracking_scripts_load_when_a_key_is_set(monkeypatch):
-    monkeypatch.setattr(main, "AMPLITUDE_API_KEY", "test-key")
+    monkeypatch.setattr(analytics, "API_KEY", "test-key")
     page = TestClient(app).get("/")
     assert 'data-amplitude-key="test-key"' in page.text
     # Amplitude's script must come before ours.

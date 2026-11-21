@@ -18,7 +18,7 @@ const userId = body.dataset.userId || undefined;   // empty for guests
 //    Guests get a random device ID. Logged-in users also get their user ID,
 //    which is how Amplitude joins a guest's earlier activity to the account.
 
-amplitude.init(body.dataset.amplitudeKey, userId, {
+const started = amplitude.init(body.dataset.amplitudeKey, userId, {
   autocapture: {
     attribution: true,          // where the visitor came from
     pageViews: true,
@@ -27,6 +27,16 @@ amplitude.init(body.dataset.amplitudeKey, userId, {
     fileDownloads: false,
     elementInteractions: false,
   },
+});
+
+//    Tell the server who this browser is. Once Amplitude has finished
+//    starting, copy its device ID and session ID into two cookies. The
+//    browser sends cookies with every request, so the Python code can read
+//    them and put its own events on the same user and session.
+
+started.promise.then(() => {
+  document.cookie = 'mw_device_id=' + amplitude.getDeviceId() + '; path=/; SameSite=Lax';
+  document.cookie = 'mw_session_id=' + amplitude.getSessionId() + '; path=/; SameSite=Lax';
 });
 
 

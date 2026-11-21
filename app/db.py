@@ -169,7 +169,8 @@ def get_booking(booking_id):
     with connect() as conn:
         return conn.execute(
             """
-            SELECT b.*, s.starts_at, w.name AS workshop_name, w.slug, w.category
+            SELECT b.*, s.starts_at, s.workshop_id,
+                   w.name AS workshop_name, w.slug, w.category
             FROM bookings b
             JOIN workshop_sessions s ON s.id = b.workshop_session_id
             JOIN workshops w ON w.id = s.workshop_id

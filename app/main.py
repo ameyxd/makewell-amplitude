@@ -3,23 +3,15 @@ import os
 from datetime import datetime
 from pathlib import Path
 
-from dotenv import load_dotenv
 from fastapi import FastAPI, Form, Request
 from fastapi.responses import RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from starlette.middleware.sessions import SessionMiddleware
 
-from app import auth, db, payments, seed
+from app import analytics, auth, db, payments, seed
 
 APP_DIR = Path(__file__).parent
-
-# Read settings from the .env file, if there is one, into os.environ.
-load_dotenv()
-
-# The Amplitude project to send to. Empty means tracking is switched off.
-# This key identifies the project; it is meant to be visible in the browser.
-AMPLITUDE_API_KEY = os.environ.get("AMPLITUDE_API_KEY", "")
 
 MAX_SEATS = 4  # the most seats one booking can take
 
@@ -72,6 +64,11 @@ def days_until(text):
     return (datetime.fromisoformat(text) - datetime.now()).days
 
 
+def hours_until(text):
+    """Whole hours from now until a date, e.g. 52. Used as an event property."""
+    return int((datetime.fromisoformat(text) - datetime.now()).total_seconds() // 3600)
+
+
 templates.env.filters["pounds"] = pounds
 templates.env.filters["nice_date"] = nice_date
 templates.env.filters["duration"] = duration
@@ -93,7 +90,7 @@ def render(request, template, context=None, status_code=200):
     context = context or {}
     context["user"] = current_user(request)
     context["has_pending_booking"] = "pending" in request.session
-    context["amplitude_key"] = AMPLITUDE_API_KEY
+    context["amplitude_key"] = analytics.API_KEY
     return templates.TemplateResponse(
         request, template, context, status_code=status_code
     )
@@ -125,6 +122,15 @@ def after_login(request):
     if "pending" in request.session:
         return RedirectResponse("/checkout", status_code=303)
     return RedirectResponse("/", status_code=303)
+
+
+def arrived_from(request):
+    """'checkout' if they are in the middle of a booking, else 'direct'.
+
+    Sent as a property of Account Created and Logged In, so we can tell
+    people who hit the account wall from people who came on their own.
+    """
+    return "checkout" if "pending" in request.session else "direct"
 
 
 # --- Browse ---
@@ -190,6 +196,16 @@ def signup(
         email, display_name, auth.hash_password(password, salt), salt
     )
     request.session["user_id"] = user_id
+
+    # This is the first event to carry both the browser's device ID and the
+    # new user ID, which is what joins the guest's earlier events to them.
+    analytics.track(
+        request,
+        user_id,
+        "Account Created",
+        {"signup_source": arrived_from(request)},
+        set_once={"signup_date": db.now_text()[:10]},  # e.g. "2026-11-21"
+    )
     return after_login(request)
 
 
@@ -215,6 +231,9 @@ def login(request: Request, email: str = Form(""), password: str = Form("")):
         )
 
     request.session["user_id"] = user["id"]
+    analytics.track(
+        request, user["id"], "Logged In", {"login_source": arrived_from(request)}
+    )
     return after_login(request)
 
 
@@ -304,13 +323,46 @@ def checkout(
         if booking_id is None:  # someone took the last seats a moment ago
             reason = "session_full"
 
+    order_value = order["amount_pence"] / 100  # pounds, e.g. 65.0
+
     if reason:
+        analytics.track(
+            request,
+            user["id"],
+            "Booking Failed",
+            {
+                "reason": reason,
+                "workshop_session_id": workshop_session["id"],
+                "seats": order["seats"],
+                "order_value": order_value,
+            },
+        )
         return render(
             request,
             "checkout.html",
             {"order": order, "error": FAILURE_MESSAGES[reason], "card_name": card_name},
             status_code=400,
         )
+
+    analytics.track(
+        request,
+        user["id"],
+        "Booking Completed",
+        {
+            "booking_id": booking_id,
+            "workshop_id": workshop_session["workshop_id"],
+            "workshop_name": workshop_session["workshop_name"],
+            "workshop_session_id": workshop_session["id"],
+            "category": workshop_session["category"],
+            "seats": order["seats"],
+            "order_value": order_value,
+            "currency": "GBP",
+        },
+        revenue=order_value,
+        insert_id=f"{user['id']}-booking-{booking_id}-completed",
+        set_once={"first_workshop_category": workshop_session["category"]},
+        add={"total_bookings": 1, "total_spend": order_value},
+    )
 
     del request.session["pending"]
     return RedirectResponse(f"/bookings/{booking_id}/confirmed", status_code=303)
@@ -356,7 +408,25 @@ def cancel_booking(request: Request, booking_id: int):
     if user is None or booking is None or booking["user_id"] != user["id"]:
         return render(request, "not_found.html", status_code=404)
 
-    if booking["starts_at"] > db.now_text():
-        db.cancel_booking(booking)
+    # cancel_booking returns False if it was already cancelled, so a double
+    # click cannot refund, or send the event, twice.
+    if booking["starts_at"] > db.now_text() and db.cancel_booking(booking):
+        refund = booking["amount_pence"] / 100
+        analytics.track(
+            request,
+            user["id"],
+            "Booking Cancelled",
+            {
+                "booking_id": booking_id,
+                "workshop_id": booking["workshop_id"],
+                "workshop_name": booking["workshop_name"],
+                "refund_amount": refund,
+                "currency": "GBP",
+                "hours_before_session": hours_until(booking["starts_at"]),
+            },
+            revenue=-refund,
+            insert_id=f"{user['id']}-booking-{booking_id}-cancelled",
+            add={"total_bookings": -1, "total_spend": -refund},
+        )
 
     return RedirectResponse("/my-bookings", status_code=303)
