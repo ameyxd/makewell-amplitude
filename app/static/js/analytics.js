@@ -31,11 +31,17 @@ const userId = body.dataset.userId || undefined;   // empty for guests
 //                on this site loads a new page, and with the plugin's
 //                in-memory default the last seconds before that were lost.
 //                Stored in the browser, the next page can upload them.
+//    flushIntervalConfig: how often a batch of recording is closed and
+//                queued for upload. By default the gap grows to 10 seconds,
+//                and the batch still open when a page changes is lost. One
+//                second keeps that loss to about the last second of a page,
+//                at the cost of more, smaller uploads.
 
 if (window.sessionReplay) {
   amplitude.add(window.sessionReplay.plugin({
     sampleRate: 1,
     storeType: 'idb',
+    flushIntervalConfig: { minIntervalMs: 1000, maxIntervalMs: 1000 },
     privacyConfig: {
       defaultMaskLevel: 'medium',
       maskSelector: ['[data-private]'],
@@ -59,7 +65,12 @@ if (window.engagement) {
 
 const started = amplitude.init(body.dataset.amplitudeKey, userId, {
   autocapture: {
-    attribution: true,          // where the visitor came from
+    attribution: {              // where the visitor came from (utm_source, referrer)
+      // Our own pages are not a traffic source. On a real domain the SDK
+      // works that out by itself. On localhost it cannot, and every click
+      // to another page wiped the utm_source the visitor arrived with.
+      excludeReferrers: [location.host],
+    },
     pageViews: true,
     sessions: true,
     formInteractions: false,    // off: we name the steps that matter ourselves

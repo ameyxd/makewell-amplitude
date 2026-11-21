@@ -7,3 +7,5 @@ python-dotenv==1.2.4
 amplitude-analytics==1.3.0
 pytest==9.2.0
 httpx==0.28.1
+# Only for scripts/simulate_traffic.py. The site itself does not need it.
+playwright==1.65.2
